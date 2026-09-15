@@ -1,0 +1,19 @@
+{
+  "name": "credito-simulacao",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Simulador estático de crédito habitação para Cloudflare Pages.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && python3 -m http.server 4173 -d dist",
+    "test": "node --test",
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name credito-simulacao"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
