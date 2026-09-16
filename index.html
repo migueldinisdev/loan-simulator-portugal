@@ -1,181 +1,675 @@
 <!doctype html>
 <html lang="pt-PT">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Comparador pessoal e simulador de cenários para crédito habitação." />
-    <meta name="theme-color" content="#0d6b57" />
-    <title>Crédito Claro — Simulador de Crédito Habitação</title>
-    <link rel="preconnect" href="https://morgana.comparaja.pt" />
-    <link rel="preconnect" href="https://morgana-prd.s3.amazonaws.com" />
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <a class="brand" href="#top" aria-label="Crédito Claro — início">
-        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 22.5 24 9l16 13.5v17A3.5 3.5 0 0 1 36.5 43h-25A3.5 3.5 0 0 1 8 39.5v-17Z"/><path d="M19 43V28h10v15"/></svg></span>
-        <span><b>Crédito</b> Claro<small>comparador pessoal</small></span>
-      </a>
-      <div class="api-status" id="apiStatus"><span></span><em>Ligação à API</em></div>
-    </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="Comparador pessoal e simulador de cenários para crédito habitação."
+        />
+        <meta name="theme-color" content="#0d6b57" />
+        <title>Crédito Claro — Simulador de Crédito Habitação</title>
+        <link rel="preconnect" href="https://morgana.comparaja.pt" />
+        <link rel="preconnect" href="https://morgana-prd.s3.amazonaws.com" />
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <main id="top">
+            <nav
+                class="view-tabs"
+                role="tablist"
+                aria-label="Áreas da ferramenta"
+            >
+                <button
+                    class="active"
+                    id="offersTab"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="offersView"
+                    data-view="offers"
+                >
+                    <span>Propostas</span>
+                </button>
+                <button
+                    id="scenarioTab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="scenarioView"
+                    data-view="scenario"
+                >
+                    <span>Cenários</span
+                    ><em id="tabSelectionCount" hidden>0</em>
+                </button>
+            </nav>
 
-    <main id="top">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">SIMULAÇÃO DE CRÉDITO HABITAÇÃO</p>
-          <h1>Compara o custo real,<br /><em>não só a mensalidade.</em></h1>
-          <p class="hero-copy">Escolhe propostas reais e testa como se comportam perante diferentes futuros da Euribor.</p>
-        </div>
-        <div class="hero-stat" aria-label="Resumo dos resultados"><span>Dados em direto</span><strong id="heroCount">—</strong><small>propostas encontradas</small></div>
-      </section>
+            <section
+                class="view-panel"
+                id="offersView"
+                role="tabpanel"
+                aria-labelledby="offersTab"
+            >
+                <div class="app-layout">
+                    <aside
+                        class="simulator-panel"
+                        aria-labelledby="simulatorTitle"
+                    >
+                        <div class="panel-heading">
+                            <h2 id="simulatorTitle">Dados do crédito</h2>
+                        </div>
+                        <form id="simulationForm">
+                            <label class="field"
+                                ><span>Valor do imóvel</span
+                                ><span class="input-shell"
+                                    ><input
+                                        id="deedAmount"
+                                        name="deedAmount"
+                                        type="number"
+                                        min="10000"
+                                        max="10000000"
+                                        step="1000"
+                                        value="200000"
+                                        required
+                                    /><b>€</b></span
+                                ></label
+                            >
+                            <label class="field"
+                                ><span>Capital inicial</span
+                                ><span class="input-shell"
+                                    ><input
+                                        id="initialCapital"
+                                        name="initialCapital"
+                                        type="number"
+                                        min="0"
+                                        max="10000000"
+                                        step="1000"
+                                        value="0"
+                                        required
+                                    /><b>€</b></span
+                                ></label
+                            >
+                            <label class="field"
+                                ><span>Valor do financiamento</span
+                                ><span class="input-shell"
+                                    ><input
+                                        id="loanAmount"
+                                        name="loanAmount"
+                                        type="number"
+                                        min="5000"
+                                        max="10000000"
+                                        step="1000"
+                                        value="200000"
+                                        required
+                                    /><b>€</b></span
+                                ></label
+                            >
+                            <div class="ltv-row">
+                                <span>Entrada <b id="downPayment">0 €</b></span
+                                ><span>LTV <b id="ltvValue">100%</b></span>
+                            </div>
+                            <div class="ltv-track">
+                                <span id="ltvBar"></span>
+                            </div>
+                            <p class="field-warning" id="ltvWarning" hidden>
+                                O financiamento é superior ao valor do imóvel.
+                            </p>
+                            <div class="two-fields">
+                                <label class="field"
+                                    ><span>Rendimento mensal</span
+                                    ><span class="input-shell"
+                                        ><input
+                                            id="income"
+                                            name="income"
+                                            type="number"
+                                            min="1"
+                                            max="1000000"
+                                            step="0.01"
+                                            value="2000"
+                                            required
+                                        /><b>€</b></span
+                                    ></label
+                                >
+                                <label class="field"
+                                    ><span>Prazo</span
+                                    ><span class="input-shell"
+                                        ><input
+                                            id="loanTerm"
+                                            name="loanTerm"
+                                            type="number"
+                                            min="1"
+                                            max="40"
+                                            step="1"
+                                            value="40"
+                                            required
+                                        /><b>anos</b></span
+                                    ></label
+                                >
+                            </div>
+                            <fieldset>
+                                <legend>Tipo de taxa</legend>
+                                <div class="segmented" id="rateTabs">
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="rateType"
+                                            value="mixed"
+                                            checked
+                                        /><span>Mista</span></label
+                                    >
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="rateType"
+                                            value="variable"
+                                        /><span>Variável</span></label
+                                    >
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="rateType"
+                                            value="fixed"
+                                        /><span>Fixa</span></label
+                                    >
+                                </div>
+                            </fieldset>
+                            <fieldset
+                                class="euribor-fieldset"
+                                id="euriborFieldset"
+                            >
+                                <legend>Euribor</legend>
+                                <div class="radio-row">
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="euriborType"
+                                            value="threeMonth"
+                                        /><span>3 meses</span></label
+                                    >
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="euriborType"
+                                            value="sixMonth"
+                                            checked
+                                        /><span>6 meses</span></label
+                                    >
+                                    <label
+                                        ><input
+                                            type="radio"
+                                            name="euriborType"
+                                            value="twelveMonth"
+                                        /><span>12 meses</span></label
+                                    >
+                                </div>
+                            </fieldset>
+                            <button
+                                class="primary-button"
+                                id="simulateButton"
+                                type="submit"
+                            >
+                                Atualizar propostas
+                            </button>
+                        </form>
+                        <p class="source-note">
+                            Valores indicativos; podem não incluir seguros e
+                            custos externos.
+                        </p>
+                    </aside>
 
-      <nav class="view-tabs" role="tablist" aria-label="Áreas da ferramenta">
-        <button class="active" id="offersTab" type="button" role="tab" aria-selected="true" aria-controls="offersView" data-view="offers">
-          <span class="tab-icon" aria-hidden="true">⌂</span><span><b>Propostas</b><small>Explorar o mercado</small></span>
-        </button>
-        <button id="scenarioTab" type="button" role="tab" aria-selected="false" aria-controls="scenarioView" data-view="scenario">
-          <span class="tab-icon" aria-hidden="true">↗</span><span><b>Simulador</b><small>Comparar cenários</small></span><em id="tabSelectionCount">0</em>
-        </button>
-      </nav>
+                    <section class="results" aria-labelledby="resultsTitle">
+                        <div class="results-heading">
+                            <h1 id="resultsTitle">Propostas</h1>
+                            <label class="sort-field"
+                                ><span>Ordenar por</span
+                                ><select id="sortBy">
+                                    <option value="installment">
+                                        Menor mensalidade
+                                    </option>
+                                    <option value="taeg">Menor TAEG</option>
+                                    <option value="mtic">Menor MTIC</option>
+                                    <option value="totalComission">
+                                        Menores despesas
+                                    </option>
+                                </select></label
+                            >
+                        </div>
 
-      <section class="view-panel" id="offersView" role="tabpanel" aria-labelledby="offersTab">
-        <div class="app-layout">
-          <aside class="simulator-panel" aria-labelledby="simulatorTitle">
-            <div class="panel-heading"><span class="step-number">01</span><div><p>Os teus dados</p><h2 id="simulatorTitle">Configurar pesquisa</h2></div></div>
-            <form id="simulationForm">
-              <label class="field"><span>Valor do imóvel</span><span class="input-shell"><input id="deedAmount" name="deedAmount" type="number" min="10000" max="10000000" step="1000" value="200000" required /><b>€</b></span></label>
-              <label class="field"><span>Capital inicial</span><span class="input-shell"><input id="initialCapital" name="initialCapital" type="number" min="0" max="10000000" step="1000" value="0" required /><b>€</b></span></label>
-              <label class="field"><span>Valor do financiamento</span><span class="input-shell"><input id="loanAmount" name="loanAmount" type="number" min="5000" max="10000000" step="1000" value="200000" required /><b>€</b></span></label>
-              <div class="ltv-row"><span>Entrada <b id="downPayment">0 €</b></span><span>LTV <b id="ltvValue">100%</b></span></div>
-              <div class="ltv-track"><span id="ltvBar"></span></div>
-              <p class="field-warning" id="ltvWarning" hidden>O financiamento é superior ao valor do imóvel.</p>
-              <div class="two-fields">
-                <label class="field"><span>Rendimento mensal</span><span class="input-shell"><input id="income" name="income" type="number" min="1" max="1000000" step="0.01" value="2000" required /><b>€</b></span></label>
-                <label class="field"><span>Prazo</span><span class="input-shell"><input id="loanTerm" name="loanTerm" type="number" min="1" max="40" step="1" value="40" required /><b>anos</b></span></label>
-              </div>
-              <fieldset><legend>Tipo de taxa</legend><div class="segmented" id="rateTabs">
-                <label><input type="radio" name="rateType" value="mixed" checked /><span>Mista</span></label>
-                <label><input type="radio" name="rateType" value="variable" /><span>Variável</span></label>
-                <label><input type="radio" name="rateType" value="fixed" /><span>Fixa</span></label>
-              </div></fieldset>
-              <fieldset class="euribor-fieldset" id="euriborFieldset"><legend>Euribor</legend><div class="radio-row">
-                <label><input type="radio" name="euriborType" value="threeMonth" /><span>3 meses</span></label>
-                <label><input type="radio" name="euriborType" value="sixMonth" checked /><span>6 meses</span></label>
-                <label><input type="radio" name="euriborType" value="twelveMonth" /><span>12 meses</span></label>
-              </div></fieldset>
-              <button class="primary-button" id="simulateButton" type="submit"><span>Atualizar propostas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
-            </form>
-            <p class="source-note">Resultados diretamente do endpoint indicado. Seguros e custos externos podem não estar incluídos.</p>
-          </aside>
-
-          <section class="results" aria-labelledby="resultsTitle">
-            <div class="results-heading">
-              <div><p class="eyebrow">AS PROPOSTAS</p><h2 id="resultsTitle">Resultados lado a lado</h2><p class="results-subtitle">Compara o essencial; abre o detalhe apenas quando precisares.</p></div>
-              <label class="sort-field"><span>Ordenar por</span><select id="sortBy"><option value="installment">Menor mensalidade</option><option value="taeg">Menor TAEG</option><option value="mtic">Menor MTIC</option><option value="totalComission">Menores despesas</option></select></label>
-            </div>
-
-            <div class="selection-bar" id="selectionBar" hidden>
-              <div><span class="selection-icon">✓</span><div><b><span id="selectionCount">0</span> propostas selecionadas</b><div class="selection-chips" id="selectionChips"></div></div></div>
-              <div class="selection-actions"><button class="text-button" id="clearSelection" type="button">Limpar</button><button class="compact-button" id="openSimulator" type="button">Abrir simulador <span>→</span></button></div>
-            </div>
-
-            <div class="summary-strip" id="summaryStrip" hidden>
-              <div><span>Prestação mensal mais baixa</span><b id="bestInstallment">—</b><small>antes de seguros e custos externos</small></div>
-              <p>Vê taxas, MTIC e comissões apenas nas propostas que te interessam.</p>
-            </div>
-            <div class="loading-state" id="loadingState" aria-live="polite"><span class="loader"></span><h3>A procurar as melhores propostas…</h3><p>A consultar o mercado com os teus dados.</p></div>
-            <div class="error-state" id="errorState" hidden role="alert"><span>!</span><div><h3>Não foi possível obter as propostas</h3><p id="errorMessage"></p></div><button type="button" id="retryButton">Tentar novamente</button></div>
-            <div class="offers" id="offers" aria-live="polite"></div>
-          </section>
-        </div>
-      </section>
-
-      <section class="view-panel scenario-view" id="scenarioView" role="tabpanel" aria-labelledby="scenarioTab" hidden>
-        <div class="scenario-empty" id="scenarioEmpty">
-          <span>↗</span><h2>Escolhe propostas para comparar</h2><p>Seleciona entre duas e quatro ofertas no separador Propostas.</p><button class="primary-button fit-button" type="button" data-view="offers">Ver propostas</button>
-        </div>
-
-        <div class="scenario-app" id="scenarioApp" hidden>
-          <header class="scenario-header">
-            <div><p class="eyebrow">LABORATÓRIO DE CENÁRIOS</p><h2>Como reage cada proposta?</h2><p>Projeta a Euribor e compara o dinheiro pago, o saldo e o custo financeiro.</p></div>
-            <div class="scenario-offers" id="scenarioOffers"></div>
-          </header>
-
-          <div class="scenario-layout">
-            <aside class="scenario-controls">
-              <div class="panel-heading"><span class="step-number">02</span><div><p>Hipóteses</p><h3>Definir cenários</h3></div></div>
-              <form id="scenarioForm">
-                <label class="field"><span>Euribor inicial</span><span class="input-shell"><input id="scenarioStart" type="number" min="-2" max="15" step="0.05" required /><b>%</b></span></label>
-                <div class="two-fields">
-                  <label class="field"><span>Progressão X</span><span class="input-shell"><input id="transitionYears" type="number" min="0.5" max="40" step="0.5" value="5" required /><b>anos</b></span></label>
-                  <label class="field"><span>Analisar em Y</span><span class="input-shell"><input id="horizonYears" type="number" min="1" max="40" step="1" value="10" required /><b>anos</b></span></label>
+                        <div class="selection-bar" id="selectionBar" hidden>
+                            <div>
+                                <b
+                                    ><span id="selectionCount">0</span>
+                                    selecionadas</b
+                                >
+                                <div
+                                    class="selection-chips"
+                                    id="selectionChips"
+                                ></div>
+                            </div>
+                            <div class="selection-actions">
+                                <button
+                                    class="text-button"
+                                    id="clearSelection"
+                                    type="button"
+                                >
+                                    Limpar</button
+                                ><button
+                                    class="compact-button"
+                                    id="openSimulator"
+                                    type="button"
+                                >
+                                    Comparar
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            class="loading-state"
+                            id="loadingState"
+                            aria-live="polite"
+                        >
+                            <span class="loader"></span>
+                            <h3>A procurar propostas…</h3>
+                        </div>
+                        <div
+                            class="error-state"
+                            id="errorState"
+                            hidden
+                            role="alert"
+                        >
+                            <span>!</span>
+                            <div>
+                                <h3>Não foi possível obter as propostas</h3>
+                                <p id="errorMessage"></p>
+                            </div>
+                            <button type="button" id="retryButton">
+                                Tentar novamente
+                            </button>
+                        </div>
+                        <div
+                            class="offers"
+                            id="offers"
+                            aria-live="polite"
+                        ></div>
+                    </section>
                 </div>
-                <p class="control-help">A Euribor evolui linearmente até X e depois permanece no valor-alvo.</p>
-                <div class="target-list">
-                  <label class="target-card best"><span><i></i>Best</span><div><input id="targetBest" type="number" min="-2" max="15" step="0.05" required /><b>%</b></div></label>
-                  <label class="target-card base"><span><i></i>Base</span><div><input id="targetBase" type="number" min="-2" max="15" step="0.05" required /><b>%</b></div></label>
-                  <label class="target-card worst"><span><i></i>Worst</span><div><input id="targetWorst" type="number" min="-2" max="15" step="0.05" required /><b>%</b></div></label>
+            </section>
+
+            <section
+                class="view-panel scenario-view"
+                id="scenarioView"
+                role="tabpanel"
+                aria-labelledby="scenarioTab"
+                hidden
+            >
+                <div class="scenario-empty" id="scenarioEmpty">
+                    <h2>Seleciona pelo menos duas propostas</h2>
+                    <button
+                        class="primary-button fit-button"
+                        type="button"
+                        data-view="offers"
+                    >
+                        Ver propostas
+                    </button>
                 </div>
-                <div class="scenario-error" id="scenarioError" hidden></div>
-              </form>
-            </aside>
 
-            <div class="scenario-content">
-              <section class="chart-card">
-                <div class="card-heading"><div><p class="detail-kicker">TRAJETÓRIA MACRO</p><h3>Evolução da Euribor</h3></div><div class="chart-legend scenario-legend"><span class="best">Best</span><span class="base">Base</span><span class="worst">Worst</span></div></div>
-                <div class="chart-wrap"><svg id="euriborChart" class="chart" viewBox="0 0 900 280" role="img" aria-label="Evolução projetada da Euribor"></svg></div>
-              </section>
+                <div class="scenario-app" id="scenarioApp" hidden>
+                    <header class="scenario-header">
+                        <h1>Cenários</h1>
+                        <div class="scenario-offers" id="scenarioOffers"></div>
+                    </header>
 
-              <section class="chart-card">
-                <div class="card-heading payment-heading"><div><p class="detail-kicker">IMPACTO MENSAL</p><h3>Prestação ao longo do tempo</h3></div><div class="mini-segmented" role="tablist" aria-label="Cenário do gráfico"><button data-chart-scenario="best" type="button">Best</button><button class="active" data-chart-scenario="base" type="button">Base</button><button data-chart-scenario="worst" type="button">Worst</button></div></div>
-                <div class="chart-legend offer-legend" id="offerLegend"></div>
-                <div class="chart-wrap"><svg id="paymentChart" class="chart" viewBox="0 0 900 310" role="img" aria-label="Evolução das prestações das ofertas"></svg></div>
-              </section>
+                    <div class="scenario-layout">
+                        <aside class="scenario-controls">
+                            <div class="panel-heading"><h2>Hipóteses</h2></div>
+                            <form id="scenarioForm">
+                                <label class="field"
+                                    ><span>Euribor inicial</span
+                                    ><span class="input-shell"
+                                        ><input
+                                            id="scenarioStart"
+                                            type="number"
+                                            min="-2"
+                                            max="15"
+                                            step="0.05"
+                                            required
+                                        /><b>%</b></span
+                                    ></label
+                                >
+                                <div class="two-fields">
+                                    <label class="field"
+                                        ><span>Progressão X</span
+                                        ><span class="input-shell"
+                                            ><input
+                                                id="transitionYears"
+                                                type="number"
+                                                min="0.5"
+                                                max="40"
+                                                step="0.5"
+                                                value="5"
+                                                required
+                                            /><b>anos</b></span
+                                        ></label
+                                    >
+                                    <label class="field"
+                                        ><span>Analisar em Y</span
+                                        ><span class="input-shell"
+                                            ><input
+                                                id="horizonYears"
+                                                type="number"
+                                                min="1"
+                                                max="40"
+                                                step="1"
+                                                value="10"
+                                                required
+                                            /><b>anos</b></span
+                                        ></label
+                                    >
+                                </div>
+                                <p class="control-help">
+                                    A Euribor evolui linearmente até X e depois
+                                    permanece no valor-alvo.
+                                </p>
+                                <div class="target-list">
+                                    <label class="target-card best"
+                                        ><span><i></i>Best</span>
+                                        <div>
+                                            <input
+                                                id="targetBest"
+                                                type="number"
+                                                min="-2"
+                                                max="15"
+                                                step="0.05"
+                                                required
+                                            /><b>%</b>
+                                        </div></label
+                                    >
+                                    <label class="target-card base"
+                                        ><span><i></i>Base</span>
+                                        <div>
+                                            <input
+                                                id="targetBase"
+                                                type="number"
+                                                min="-2"
+                                                max="15"
+                                                step="0.05"
+                                                required
+                                            /><b>%</b>
+                                        </div></label
+                                    >
+                                    <label class="target-card worst"
+                                        ><span><i></i>Worst</span>
+                                        <div>
+                                            <input
+                                                id="targetWorst"
+                                                type="number"
+                                                min="-2"
+                                                max="15"
+                                                step="0.05"
+                                                required
+                                            /><b>%</b>
+                                        </div></label
+                                    >
+                                </div>
+                                <div
+                                    class="scenario-error"
+                                    id="scenarioError"
+                                    hidden
+                                ></div>
+                            </form>
+                        </aside>
 
-              <section class="matrix-card">
-                <div class="card-heading"><div><p class="detail-kicker">DECISÃO</p><h3>Resultado ao fim de <span id="matrixHorizon">10</span> anos</h3></div><p class="matrix-note">Vencedor pelo custo comparável</p></div>
-                <div class="table-wrap"><table class="comparison-table"><thead><tr><th>Proposta</th><th>Best</th><th>Base</th><th>Worst</th></tr></thead><tbody id="comparisonBody"></tbody></table></div>
-                <p class="calculation-note">Custo comparável = prestações acumuladas + comissões iniciais + saldo em dívida. Não inclui entrada, seguros, manutenção de conta nem penalizações.</p>
-              </section>
+                        <div class="scenario-content">
+                            <section class="chart-card">
+                                <div class="card-heading">
+                                    <h3>Evolução da Euribor</h3>
+                                    <div class="chart-legend scenario-legend">
+                                        <span class="best">Best</span
+                                        ><span class="base">Base</span
+                                        ><span class="worst">Worst</span>
+                                    </div>
+                                </div>
+                                <div class="chart-wrap">
+                                    <svg
+                                        id="euriborChart"
+                                        class="chart"
+                                        viewBox="0 0 900 280"
+                                        role="img"
+                                        aria-label="Evolução projetada da Euribor"
+                                    ></svg>
+                                </div>
+                            </section>
 
-              <section class="breakdown-card">
-                <div class="card-heading"><div><p class="detail-kicker">NÚMEROS COMPLETOS</p><h3>Detalhe do cenário <span id="breakdownScenario">Base</span></h3></div></div>
-                <div class="breakdown-grid" id="breakdownGrid"></div>
-              </section>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+                            <section class="chart-card">
+                                <div class="card-heading payment-heading">
+                                    <h3>Prestação ao longo do tempo</h3>
+                                    <div
+                                        class="mini-segmented"
+                                        role="tablist"
+                                        aria-label="Cenário do gráfico"
+                                    >
+                                        <button
+                                            data-chart-scenario="best"
+                                            type="button"
+                                        >
+                                            Best</button
+                                        ><button
+                                            class="active"
+                                            data-chart-scenario="base"
+                                            type="button"
+                                        >
+                                            Base</button
+                                        ><button
+                                            data-chart-scenario="worst"
+                                            type="button"
+                                        >
+                                            Worst
+                                        </button>
+                                    </div>
+                                </div>
+                                <div
+                                    class="chart-legend offer-legend"
+                                    id="offerLegend"
+                                ></div>
+                                <div class="chart-wrap">
+                                    <svg
+                                        id="paymentChart"
+                                        class="chart"
+                                        viewBox="0 0 900 310"
+                                        role="img"
+                                        aria-label="Evolução das prestações das ofertas"
+                                    ></svg>
+                                </div>
+                            </section>
 
-    <footer><p><b>Crédito Claro</b> · Ferramenta pessoal de análise</p><p>Os valores são indicativos e não constituem uma proposta contratual.</p></footer>
-    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+                            <section class="chart-card">
+                                <div class="card-heading">
+                                    <h3>Total pago acumulado</h3>
+                                </div>
+                                <div
+                                    class="chart-legend offer-legend"
+                                    id="moneySpentLegend"
+                                ></div>
+                                <div class="chart-wrap">
+                                    <svg
+                                        id="moneySpentChart"
+                                        class="chart"
+                                        viewBox="0 0 900 310"
+                                        role="img"
+                                        aria-label="Total já pago acumulado por oferta"
+                                    ></svg>
+                                </div>
+                                <p class="calculation-note">
+                                    Inclui as comissões iniciais do banco e as
+                                    prestações já pagas. Não inclui entrada,
+                                    seguros, manutenção de conta nem
+                                    penalizações.
+                                </p>
+                            </section>
 
-    <template id="offerTemplate">
-      <article class="offer-card">
-        <div class="offer-top">
-          <span class="rank-badge"></span>
-          <div class="bank-block"><div class="bank-logo-wrap"><img class="bank-logo" alt="" /></div><div><p class="product-label"></p><h3 class="bank-name"></h3><div class="rate-pills"><span class="rate-type"></span><span class="rate-tenure"></span></div></div></div>
-          <div class="offer-actions"><button class="compare-button" type="button"><span class="compare-check">+</span><span class="compare-label">Comparar</span></button></div>
-        </div>
-        <div class="offer-overview">
-          <div class="overview-cost"><p><span>MTIC</span><strong class="mtic"></strong></p><p><span>Custos iniciais</span><b class="initial-cost"></b></p></div>
-          <div class="overview-rates"><p><span>TAN</span><b class="tan"></b></p><p><span>TAEG</span><b class="taeg"></b></p></div>
-          <div class="overview-spread"><span>Spread</span><strong class="spread"></strong><small class="euribor-detail"></small></div>
-          <div class="overview-payment"><span>Prestação</span><strong class="installment"></strong><small class="effort"></small></div>
-        </div>
-        <div class="offer-utility"><button class="details-button" type="button" aria-expanded="false"><span>Condições e plano</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button></div>
-        <div class="offer-metrics" hidden aria-hidden="true">
-          <span class="total-cost"></span><span class="rate-detail"></span>
-        </div>
-        <div class="offer-details" hidden>
-          <div class="details-grid"><section><p class="detail-kicker">ESTRUTURA DO EMPRÉSTIMO</p><h4>Fases e taxas</h4><div class="loan-phases"></div></section><section><p class="detail-kicker">CUSTOS INICIAIS</p><h4>Comissões do banco</h4><dl class="commission-list"></dl></section></div>
-          <section class="conditions-section"><div class="section-title"><div><p class="detail-kicker">CONDIÇÕES</p><h4>Vantagens e requisitos</h4></div><small class="product-id"></small></div><div class="conditions-list"></div></section>
-          <section class="schedule-section"><div class="section-title"><div><p class="detail-kicker">PLANO ESTIMADO</p><h4>Amortização anual</h4></div><button class="schedule-toggle" type="button" aria-expanded="false"><span>Ver amortização</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button></div><div class="schedule-content" hidden><div class="table-wrap"><table><thead><tr><th>Ano</th><th>Prestação</th><th>Capital pago</th><th>Juros pagos</th><th>Saldo final</th></tr></thead><tbody class="schedule-body"></tbody></table></div><p class="calculation-note"></p></div></section>
-        </div>
-      </article>
-    </template>
+                            <section class="matrix-card">
+                                <div class="card-heading">
+                                    <h3>
+                                        Resultado ao fim de
+                                        <span id="matrixHorizon">10</span> anos
+                                    </h3>
+                                </div>
+                                <div class="table-wrap">
+                                    <table class="comparison-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Proposta</th>
+                                                <th>Best</th>
+                                                <th>Base</th>
+                                                <th>Worst</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="comparisonBody"></tbody>
+                                    </table>
+                                </div>
+                                <p class="calculation-note">
+                                    Custo comparável = prestações acumuladas +
+                                    comissões iniciais + saldo em dívida. Não
+                                    inclui entrada, seguros, manutenção de conta
+                                    nem penalizações.
+                                </p>
+                            </section>
 
-    <script type="module" src="app.js"></script>
-  </body>
+                            <section class="breakdown-card">
+                                <div class="card-heading">
+                                    <h3>
+                                        Detalhe do cenário
+                                        <span id="breakdownScenario">Base</span>
+                                    </h3>
+                                </div>
+                                <div
+                                    class="breakdown-grid"
+                                    id="breakdownGrid"
+                                ></div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div
+            class="toast"
+            id="toast"
+            role="status"
+            aria-live="polite"
+            hidden
+        ></div>
+
+        <template id="offerTemplate">
+            <article class="offer-card">
+                <div class="offer-top">
+                    <div class="bank-block">
+                        <div>
+                            <h3 class="bank-name"></h3>
+                            <div class="rate-pills">
+                                <span class="rate-type"></span
+                                ><span class="rate-tenure"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="offer-actions">
+                        <button class="compare-button" type="button">
+                            <span class="compare-label">Comparar</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="offer-overview">
+                    <div class="overview-cost">
+                        <p><span>MTIC</span><strong class="mtic"></strong></p>
+                        <p>
+                            <span>Custos iniciais</span
+                            ><b class="initial-cost"></b>
+                        </p>
+                    </div>
+                    <div class="overview-rates">
+                        <p><span>TAN</span><b class="tan"></b></p>
+                        <p><span>TAEG</span><b class="taeg"></b></p>
+                    </div>
+                    <div class="overview-spread">
+                        <span>Spread</span><strong class="spread"></strong
+                        ><small class="euribor-detail"></small>
+                    </div>
+                    <div class="overview-payment">
+                        <span>Prestação</span
+                        ><strong class="installment"></strong
+                        ><small class="effort"></small>
+                    </div>
+                </div>
+                <div class="offer-utility">
+                    <button
+                        class="details-button"
+                        type="button"
+                        aria-expanded="false"
+                    >
+                        <span>Condições e plano</span
+                        ><svg viewBox="0 0 24 24">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="offer-metrics" hidden aria-hidden="true">
+                    <span class="total-cost"></span
+                    ><span class="rate-detail"></span>
+                </div>
+                <div class="offer-details" hidden>
+                    <div class="details-grid">
+                        <section>
+                            <h4>Fases e taxas</h4>
+                            <div class="loan-phases"></div>
+                        </section>
+                        <section>
+                            <h4>Comissões do banco</h4>
+                            <dl class="commission-list"></dl>
+                        </section>
+                    </div>
+                    <section class="conditions-section">
+                        <div class="section-title">
+                            <h4>Condições</h4>
+                            <small class="product-id"></small>
+                        </div>
+                        <div class="conditions-list"></div>
+                    </section>
+                    <section class="schedule-section">
+                        <div class="section-title">
+                            <h4>Amortização anual</h4>
+                            <button
+                                class="schedule-toggle"
+                                type="button"
+                                aria-expanded="false"
+                            >
+                                <span>Ver amortização</span
+                                ><svg viewBox="0 0 24 24">
+                                    <path d="m6 9 6 6 6-6" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="schedule-content" hidden>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Ano</th>
+                                            <th>Prestação</th>
+                                            <th>Capital pago</th>
+                                            <th>Juros pagos</th>
+                                            <th>Saldo final</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="schedule-body"></tbody>
+                                </table>
+                            </div>
+                            <p class="calculation-note"></p>
+                        </div>
+                    </section>
+                </div>
+            </article>
+        </template>
+
+        <script type="module" src="app.js"></script>
+    </body>
 </html>

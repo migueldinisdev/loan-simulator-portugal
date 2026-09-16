@@ -5,8 +5,9 @@
   "type": "module",
   "description": "Simulador estático de crédito habitação para Cloudflare Pages.",
   "scripts": {
-    "build": "node scripts/build.mjs",
-	"dev": "npm run build && npx http-server dist -p 4173",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "node --test",
     "deploy": "npm run build && npx wrangler deploy dist --project-name loan-simulator-portugal"
   },
@@ -14,6 +15,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "vite": "^7.1.5",
     "wrangler": "^4.0.0"
   }
 }

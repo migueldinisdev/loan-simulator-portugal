@@ -1,6 +1,6 @@
 # Crédito Simulação
 
-Simulador pessoal de crédito habitação, preparado como site estático para Cloudflare Pages. Não usa backend, Workers, Pages Functions, lambdas ou base de dados.
+Simulador pessoal de crédito habitação, agora estruturado como projeto npm com Vite para desenvolvimento local com hot reload e build estático para deploy. Não usa backend, Workers, Pages Functions, lambdas ou base de dados.
 
 ## Desenvolvimento local
 
@@ -9,7 +9,14 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:4173`.
+O Vite arranca um servidor local com hot reload. O terminal mostra o URL local, normalmente `http://localhost:5173`.
+
+Para testar o build final:
+
+```bash
+npm run build
+npm run preview
+```
 
 Para validar o motor financeiro:
 
@@ -22,7 +29,7 @@ npm test
 1. Cria um repositório remoto vazio no GitHub/GitLab e faz push deste projeto.
 2. No painel Cloudflare, abre **Workers & Pages** → **Create application** → **Pages** → **Connect to Git**.
 3. Escolhe o repositório e configura:
-   - Framework preset: `None`
+   - Framework preset: `Vite`
    - Build command: `npm run build`
    - Build output directory: `dist`
    - Node.js version: `20` ou superior
@@ -38,8 +45,6 @@ Depois de fazer login uma vez:
 npx wrangler login
 npm run deploy
 ```
-
-Se o projeto Pages ainda não existir, o comando pede o nome e cria-o. Para usar outro nome, altera `--project-name credito-simulacao` no `package.json`.
 
 ## Limitação conhecida
 

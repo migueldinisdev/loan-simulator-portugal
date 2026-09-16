@@ -196,6 +196,7 @@ function toggleSelection(product) {
 function renderSelectionUI() {
   const count = state.selected.length;
   $('#tabSelectionCount').textContent = count;
+  $('#tabSelectionCount').hidden = count === 0;
   $('#selectionCount').textContent = count;
   $('#selectionBar').hidden = count === 0;
   $('#selectionChips').innerHTML = state.selected.map(item => `<span>${escapeHtml(bankName(item.product))} · ${escapeHtml(RATE_NAMES[rateType(item.product)] || 'Taxa')}</span>`).join('');
@@ -214,20 +215,15 @@ function renderScenarioSelection() {
 function showLoading() {
   $('#loadingState').hidden = false;
   $('#errorState').hidden = true;
-  $('#summaryStrip').hidden = true;
   $('#offers').replaceChildren();
   $('#simulateButton').disabled = true;
-  $('#apiStatus').className = 'api-status';
-  $('#heroCount').textContent = '—';
 }
 
 function showError(error) {
   $('#loadingState').hidden = true;
-  $('#summaryStrip').hidden = true;
   $('#errorState').hidden = false;
   $('#errorMessage').textContent = error.message || 'Confirma a ligação à internet e tenta novamente.';
   $('#simulateButton').disabled = false;
-  $('#apiStatus').className = 'api-status offline';
 }
 
 async function fetchProducts(params = getParams()) {
@@ -253,7 +249,6 @@ async function fetchProducts(params = getParams()) {
       state.selected = state.selected.map(item => ({ ...item, product: unique.get(item.key) || item.product }));
       saveState();
     }
-    $('#apiStatus').className = 'api-status online';
     $('#simulateButton').disabled = false;
     $('#loadingState').hidden = true;
     renderProducts();
@@ -268,21 +263,12 @@ function sortedProducts() {
   return [...state.products].sort((left, right) => Number(left.attributes?.[key] ?? Infinity) - Number(right.attributes?.[key] ?? Infinity));
 }
 
-function renderSummary(products) {
-  const attributes = products.map(product => product.attributes || {});
-  const lowestInstallment = Math.min(...attributes.map(item => Number(item.installment) || Infinity));
-  $('#bestInstallment').textContent = eur.format(lowestInstallment);
-  $('#summaryStrip').hidden = false;
-  $('#heroCount').textContent = products.length;
-}
-
 function renderProducts() {
   const container = $('#offers');
   const products = sortedProducts();
   container.replaceChildren();
   if (!products.length || !state.params) return;
-  renderSummary(products);
-  products.forEach((product, index) => container.append(renderOffer(product, index)));
+  products.forEach(product => container.append(renderOffer(product)));
 }
 
 function rateDescription(attributes) {
@@ -298,7 +284,7 @@ function currentSchedule(product) {
   return { ...result, rows: aggregateYears(result.months) };
 }
 
-function renderOffer(product, index) {
+function renderOffer(product) {
   const fragment = $('#offerTemplate').content.cloneNode(true);
   const card = $('.offer-card', fragment);
   const attributes = product.attributes || {};
@@ -308,13 +294,6 @@ function renderOffer(product, index) {
   const schedule = currentSchedule(product);
   card.dataset.offerKey = key;
   card.classList.toggle('selected', selected);
-  card.style.animationDelay = `${Math.min(index * 35, 280)}ms`;
-  $('.rank-badge', card).textContent = index + 1;
-  const logo = $('.bank-logo', card);
-  logo.src = product.imageUrl || '';
-  logo.alt = `Logótipo ${bankName(product)}`;
-  logo.addEventListener('error', () => { logo.closest('.bank-logo-wrap').style.display = 'none'; });
-  $('.product-label', card).textContent = index === 0 ? 'MELHOR NESTA ORDENAÇÃO' : 'PROPOSTA BANCÁRIA';
   $('.bank-name', card).textContent = bankName(product);
   $('.rate-type', card).textContent = RATE_NAMES[rateType(product)] || 'Taxa';
   $('.rate-tenure', card).textContent = rateDescription(attributes);
@@ -333,7 +312,6 @@ function renderOffer(product, index) {
   const compareButton = $('.compare-button', card);
   compareButton.classList.toggle('active', selected);
   compareButton.setAttribute('aria-pressed', String(selected));
-  $('.compare-check', compareButton).textContent = selected ? '✓' : '+';
   $('.compare-label', compareButton).textContent = selected ? 'Selecionada' : 'Comparar';
   compareButton.disabled = !selected && state.selected.length >= MAX_SELECTION;
   compareButton.addEventListener('click', () => toggleSelection(product));
@@ -467,6 +445,7 @@ function renderScenario() {
     state.scenarioResults = null;
     $('#euriborChart').replaceChildren();
     $('#paymentChart').replaceChildren();
+    $('#moneySpentChart').replaceChildren();
     $('#comparisonBody').replaceChildren();
     $('#breakdownGrid').replaceChildren();
     return;
@@ -475,6 +454,7 @@ function renderScenario() {
   state.scenarioResults = results;
   renderEuriborChart();
   renderPaymentChart(results[state.chartScenario]);
+  renderMoneySpentChart(results[state.chartScenario]);
   renderMatrix(results);
   renderBreakdown(results[state.chartScenario]);
   saveState();
@@ -500,9 +480,23 @@ function renderPaymentChart(results) {
   drawChart($('#paymentChart'), series, state.scenarioConfig.horizonYears, value => eur.format(value), true);
 }
 
+function renderMoneySpentChart(results) {
+  const series = results.map(({ item, result, index }) => {
+    let totalPaid = result.commissions;
+    const points = [{ x: 0, y: totalPaid }];
+    result.months.forEach(month => {
+      totalPaid += month.payment;
+      points.push({ x: month.month / 12, y: totalPaid });
+    });
+    return { name: bankName(item.product), color: OFFER_COLORS[index], points };
+  });
+  $('#moneySpentLegend').innerHTML = series.map(item => `<span style="--offer-color:${item.color}">${escapeHtml(item.name)}</span>`).join('');
+  drawChart($('#moneySpentChart'), series, state.scenarioConfig.horizonYears, value => eur.format(value), true);
+}
+
 function drawChart(svg, series, maxX, valueFormatter, positiveOnly) {
   const width = 900;
-  const height = svg.id === 'paymentChart' ? 310 : 280;
+  const height = svg.id === 'euriborChart' ? 280 : 310;
   const margin = { top: 18, right: 24, bottom: 36, left: 68 };
   const plotWidth = width - margin.left - margin.right;
   const plotHeight = height - margin.top - margin.bottom;
